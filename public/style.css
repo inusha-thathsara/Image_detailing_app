@@ -1,0 +1,352 @@
+/*For Upload.html*/
+
+.viewerImg {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+#image-details-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+#image-details,
+#exif-data {
+  flex: 1;
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-right: 1rem;
+  /* Add spacing between the two sections */
+}
+
+#exif-data {
+  margin-right: 0;
+  /* Remove margin for the last section */
+}
+
+.dark-theme {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-theme #image-details,
+.dark-theme #exif-data {
+  background-color: #444;
+  color: #fff;
+}
+
+/* Default light theme */
+body {
+  background-color: #f2f2f2;
+  color: #333;
+}
+
+/* Dark theme */
+body.dark-theme {
+  background-color: #333;
+  color: #f2f2f2;
+}
+
+/* Theme switcher styles */
+#theme-switcher-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+#theme-switcher-container input[type="radio"] {
+  display: none;
+}
+
+#theme-switcher-container label {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+#theme-switcher-container label::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin-right: 10px;
+}
+
+#theme-switcher-container input[type="radio"]:checked+label::before {
+  background-color: #333;
+}
+
+#theme-switcher {
+  display: none;
+}
+
+.content {
+  margin: 1rem;
+}
+
+.container,
+.done {
+  margin-left: 2rem;
+}
+
+/* Center align the image and the image adding tool */
+div[style="margin: 2rem;"] {
+  text-align: center;
+}
+
+.viewerImg {
+  margin: auto;
+  display: block;
+}
+
+#input {
+  margin: auto;
+  display: block;
+}
+
+.back-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.back-button:hover {
+  background-color: #3e8e41;
+}
+
+
+/*For index.html*/
+
+.container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.upload-button,
+.url-button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+}
+
+.upload-button:hover,
+.url-button:hover {
+  background-color: #3e8e41;
+}
+
+.description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+h1 {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.no-underline {
+  text-decoration: none;
+  color: #fff;
+}
+
+
+/*For img-url.html*/
+
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.image-details {
+  margin-top: 20px;
+}
+
+.image-details h3 {
+  margin-top: 0;
+}
+
+.image-details p {
+  margin-bottom: 10px;
+}
+
+.image-details strong {
+  font-weight: bold;
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  margin-bottom: 20px;
+  border-radius: 10px;
+}
+
+.button {
+  background-color: #4CAF50;
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: #3e8e41;
+}
+
+/* Theme switcher styles */
+#theme-switcher-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+#theme-switcher-container input[type="radio"] {
+  display: none;
+}
+
+#theme-switcher-container label {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+#theme-switcher-container label::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin-right: 10px;
+}
+
+#theme-switcher-container input[type="radio"]:checked+label::before {
+  background-color: #333;
+}
+
+#theme-switcher {
+  display: none;
+}
+
+.dark-theme {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-theme .container {
+  background-color: #444;
+  color: #fff;
+}
+
+
+/* Theme switcher styles */
+#theme-switcher-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+#theme-switcher-container input[type="radio"] {
+  display: none;
+}
+
+#theme-switcher-container label {
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+#theme-switcher-container label::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ccc;
+  margin-right: 10px;
+}
+
+#theme-switcher-container input[type="radio"]:checked+label::before {
+  background-color: #333;
+}
+
+#theme-switcher {
+  display: none;
+}
+
+.dark-theme {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-theme .container {
+  background-color: #444;
+  color: #fff;
+}
+
+.dark-theme .image-details {
+  background-color: #444;
+  color: #fff;
+}
+
+.dark-theme .image {
+  border: 1px solid #fff;
+}
+
+
+
+/* style.css */
+
+.input-container {
+  position: relative;
+  display: inline-block;
+}
+
+.input {
+  width: 700px;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.paste-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 15px;
+   border: none;
+  border-radius: 5px;
+  background-color: #4CAF50;
+  color: #fff;
+  cursor: pointer;
+}
+
+.paste-button:hover {
+  background-color: #3e8e41;
+}
