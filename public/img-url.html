@@ -46,31 +46,56 @@
         const loadButton = document.getElementById('load-button');
         const image = document.getElementById('image');
         const imageDetails = document.getElementById('image-details');
+        
+        function setDetailsFrom(img, url) {
+            const w = img.naturalWidth || img.width;
+            const h = img.naturalHeight || img.height;
+            if (!w || !h) return;
+            const details = `
+                <h3>Image Details:</h3>
+                <p><strong>Width:</strong> ${w}</p>
+                <p><strong>Height:</strong> ${h}</p>
+                <p><strong>Aspect Ratio:</strong> ${(w / h).toFixed(4)}</p>
+                <p><strong>Orientation:</strong> ${w > h ? 'Landscape' : 'Portrait'}</p>
+                <p><strong>URL:</strong> ${url}</p>
+                <p><strong>Pixel Count:</strong> ${w * h} pixels</p>
+                <p><strong>Resolution:</strong> ${w} x ${h} pixels</p>
+            `;
+            imageDetails.innerHTML = details;
+        }
 
-        loadButton.addEventListener('click', () => {
-            const url = urlInput.value;
-            if (url) {
-                image.src = url;
-                displayImageDetails(url);
+        async function loadImageWithFallback(rawUrl) {
+            imageDetails.textContent = '';
+            image.removeAttribute('src');
+            image.setAttribute('alt', '');
+            image.crossOrigin = 'anonymous';
+
+            const tryLoad = (src) => new Promise((resolve, reject) => {
+                image.onload = () => resolve({ ok: true, src });
+                image.onerror = () => reject(new Error('load-failed'));
+                // attach handlers before setting src
+                image.src = src;
+            });
+
+            // First attempt: direct URL
+            try {
+                const result = await tryLoad(rawUrl);
+                setDetailsFrom(image, rawUrl);
+                return result;
+            } catch (_) {
+                // ignore; fallback below
             }
-        });
 
-        function displayImageDetails(url) {
-            const img = new Image();
-            img.src = url;
-            img.onload = function () {
-                const details = `
-      <h3>Image Details:</h3>
-      <p><strong>Width:</strong> ${img.width}</p>
-      <p><strong>Height:</strong> ${img.height}</p>
-      <p><strong>Aspect Ratio:</strong> ${img.width / img.height}</p>
-      <p><strong>Orientation:</strong> ${img.width > img.height ? 'Landscape' : 'Portrait'}</p>
-      <p><strong>URL:</strong> ${url}</p>
-      <p><strong>Pixel Density:</strong> ${img.width * img.height} pixels</p>
-      <p><strong>Resolution:</strong> ${img.width} x ${img.height} pixels</p>
-    `;
-                imageDetails.innerHTML = details;
-            };
+            // Second attempt: proxy through our backend to avoid CORS/hotlink issues
+            try {
+                const proxied = `/proxy?url=${encodeURIComponent(rawUrl)}`;
+                const result = await tryLoad(proxied);
+                setDetailsFrom(image, rawUrl);
+                return result;
+            } catch (err) {
+                imageDetails.innerHTML = '<p style="color:red">Failed to load image from the provided URL. Please verify the URL or try downloading and using Upload Image instead.</p>';
+                throw err;
+            }
         }
 
         const pasteButton = document.getElementById('paste-button');
@@ -83,17 +108,15 @@
                 console.error('Failed to read clipboard contents:', error);
             }
         });
-        loadButton.addEventListener('click', () => {
-    const url = urlInput.value;
-    if (url) {
-        image.src = url;
-        image.onerror = function() {
-            alert("Error loading image. Please try again.");
-            window.location.reload();
-        };
-        displayImageDetails(url);
-    }
-});
+        loadButton.addEventListener('click', async () => {
+            const url = urlInput.value.trim();
+            if (!url) return;
+            try {
+                await loadImageWithFallback(url);
+            } catch (e) {
+                // already handled
+            }
+        });
     </script>
     <script src="script.js"></script>
 
