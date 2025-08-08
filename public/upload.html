@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html">
+        <button class="back-button">Back</button></a>
+
+    <div style="margin: 2rem;">
+        <img id="img" src="add.png" height="500" class="viewerImg">
+    </div>
+    <input id="input" type="file" class="viewerImg" accept="image/*">
+
+    <!-- Container for image details and EXIF data -->
+    <div id="image-details-container">
+        <div id="image-details"></div>
+        <div id="exif-data"></div>
+        <button id="download-button" style="display: none;">Download Image Details</button>
+    </div>
+
+    <!-- Theme switcher button -->
+    <button id="theme-switcher">Switch Theme</button>
+
+    <!-- Container for the theme switcher -->
+    <div id="theme-switcher-container">
+        <input type="radio" id="light-theme" name="theme" value="light" checked>
+        <label for="light-theme">Light</label>
+        <input type="radio" id="dark-theme" name="theme" value="dark">
+        <label for="dark-theme">Dark</label>
+    </div>
+
+    <script>
+        let img = document.getElementById("img");
+        let input = document.getElementById("input");
+        // Get the download button
+        const downloadButton = document.getElementById("download-button");
+
+        input.onchange = (e) => {
+            if (input.files[0]) {
+                const file = input.files[0];
+                img.src = URL.createObjectURL(file);
+                displayImageDetails(file);
+                extractExifData(file);
+                downloadButton.style.display = "block"; // Show the download button
+            }
+        }
+
+        function displayImageDetails(file) {
+            const details = `
+                <h3>Image Details:</h3>
+                <p><strong>Name:</strong> ${file.name}</p>
+                <br>
+                <p><strong>Size:</strong> ${file.size} bytes</p>
+                <br>
+                <p><strong>Type:</strong> ${file.type}</p>
+            `;
+            document.getElementById("image-details").innerHTML = details; // Update image details container
+        }
+
+        function extractExifData(file) {
+            EXIF.getData(file, function () {
+                const allMetaData = EXIF.getAllTags(this);
+                let exifDetails = '<h3>EXIF Data:</h3>';
+                for (let key in allMetaData) {
+                    exifDetails += `<p><strong>${key}:</strong> ${allMetaData[key]}</p><br>`;
+                }
+                document.getElementById("exif-data").innerHTML = exifDetails; // Update EXIF data container
+            });
+        }
+
+        // Add an event listener to the download button to download the image details
+        downloadButton.addEventListener("click", () => {
+            const imageDetails = document.getElementById("image-details").innerHTML;
+            const exifData = document.getElementById("exif-data").innerHTML;
+            const details = imageDetails + exifData;
+
+            // Prompt the user to select a format and filename
+            const format = prompt("Select a format (txt, csv, json): ");
+            const filename = prompt("Enter a filename: ");
+
+            // Create a blob with the image details
+            let blob;
+            switch (format) {
+                case "txt":
+                    blob = new Blob([details], { type: "text/plain" });
+                    break;
+                case "csv":
+                    const csvDetails = details.replace(/<[^>]*>/g, "").replace(/<br>/g, "\n");
+                    blob = new Blob([csvDetails], { type: "text/csv" });
+                    break;
+                case "json":
+                    const jsonData = {
+                        imageDetails: imageDetails,
+                        exifData: exifData
+                    };
+                    blob = new Blob([JSON.stringify(jsonData)], { type: "application/json" });
+                    break;
+                default:
+                    alert("Invalid format selected.");
+                    return;
+            }
+
+            // Create a link to download the blob
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${filename}.${format}`;
+            link.click();
+        });
+    </script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,41 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Details</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Theme switcher button -->
+    <button id="theme-switcher">Switch Theme</button>
+
+    <!-- Container for the theme switcher -->
+    <div id="theme-switcher-container">
+        <input type="radio" id="light-theme" name="theme" value="light" checked>
+        <label for="light-theme">Light</label>
+        <input type="radio" id="dark-theme" name="theme" value="dark">
+        <label for="dark-theme">Dark</label>
+    </div>
+    <div class="container">
+        <h1>Image Details App</h1>
+        <a class="no-underline" href="upload.html"><button class="upload-button">Upload Image</button></a>
+        <a class="no-underline" href="img-url.html"><button class="url-button">Enter Image URL</button></a>
+        <p class="description">Upload an image or enter its URL to view its details.</p>
+    </div>
+    <script src="script.js"></script>
+
+</body>
+
+</html>

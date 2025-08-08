@@ -1,0 +1,102 @@
+<!-- img-url.html -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image URL Viewer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Theme switcher button -->
+    <button id="theme-switcher">Switch Theme</button>
+
+    <!-- Container for the theme switcher -->
+    <div id="theme-switcher-container">
+        <input type="radio" id="light-theme" name="theme" value="light" checked>
+        <label for="light-theme">Light</label>
+        <input type="radio" id="dark-theme" name="theme" value="dark">
+        <label for="dark-theme">Dark</label>
+    </div>
+    <a href="index.html">
+    <button class="back-button">Back</button></a>
+    <div class="container">
+        <h1>Image Details</h1>
+        <div class="input-container">
+            <input class="input" id="url-input" type="text" placeholder="Enter image URL">
+            <button class="paste-button" id="paste-button">Paste</button>
+        </div>
+        <button class="button" id="load-button">Load Image</button>
+        <br>
+        <br>
+        <img class="image" id="image" src="">
+        <div class="image-details" id="image-details"></div>
+    </div>
+    <script>
+        const urlInput = document.getElementById('url-input');
+        const loadButton = document.getElementById('load-button');
+        const image = document.getElementById('image');
+        const imageDetails = document.getElementById('image-details');
+
+        loadButton.addEventListener('click', () => {
+            const url = urlInput.value;
+            if (url) {
+                image.src = url;
+                displayImageDetails(url);
+            }
+        });
+
+        function displayImageDetails(url) {
+            const img = new Image();
+            img.src = url;
+            img.onload = function () {
+                const details = `
+      <h3>Image Details:</h3>
+      <p><strong>Width:</strong> ${img.width}</p>
+      <p><strong>Height:</strong> ${img.height}</p>
+      <p><strong>Aspect Ratio:</strong> ${img.width / img.height}</p>
+      <p><strong>Orientation:</strong> ${img.width > img.height ? 'Landscape' : 'Portrait'}</p>
+      <p><strong>URL:</strong> ${url}</p>
+      <p><strong>Pixel Density:</strong> ${img.width * img.height} pixels</p>
+      <p><strong>Resolution:</strong> ${img.width} x ${img.height} pixels</p>
+    `;
+                imageDetails.innerHTML = details;
+            };
+        }
+
+        const pasteButton = document.getElementById('paste-button');
+
+        pasteButton.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('url-input').value = text;
+            } catch (error) {
+                console.error('Failed to read clipboard contents:', error);
+            }
+        });
+        loadButton.addEventListener('click', () => {
+    const url = urlInput.value;
+    if (url) {
+        image.src = url;
+        image.onerror = function() {
+            alert("Error loading image. Please try again.");
+            window.location.reload();
+        };
+        displayImageDetails(url);
+    }
+});
+    </script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
