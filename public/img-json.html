@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Image ↔ JSON Converter</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .main-container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 30px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .section { margin-bottom: 2em; }
+    label { display: block; margin-bottom: 0.5em; }
+    input[type="file"] { margin-bottom: 1em; }
+    button { margin-top: 0.5em; }
+    .result { margin-top: 1em; }
+    .instructions { color: #666; font-size: 14px; margin-bottom: 1em; }
+    @media (max-width: 700px) {
+      .main-container { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme switcher button -->
+  <button id="theme-switcher">Switch Theme</button>
+  <div id="theme-switcher-container">
+    <input type="radio" id="light-theme" name="theme" value="light" checked>
+    <label for="light-theme">Light</label>
+    <input type="radio" id="dark-theme" name="theme" value="dark">
+    <label for="dark-theme">Dark</label>
+  </div>
+  <a href="index.html"><button class="back-button">Back</button></a>
+  <div class="main-container">
+    <h1>Image ↔ JSON Converter</h1>
+    <div class="instructions">
+      <b>Convert an image to a compressed JSON file, or restore an image from a JSON file.</b><br>
+      Use this tool to transfer images as JSON or recover them from JSON format.
+    </div>
+    <div class="section">
+      <h2>Convert Image to JSON</h2>
+      <form id="img2json-form">
+        <label for="img2json-input">Select image file:</label>
+        <input id="img2json-input" type="file" name="image" accept="image/*" required>
+        <button class="button" type="submit">Convert & Download JSON</button>
+      </form>
+      <div class="result" id="img2json-result"></div>
+    </div>
+    <div class="section">
+      <h2>Restore Image from JSON</h2>
+      <form id="json2img-form">
+        <label for="json2img-input">Select JSON file:</label>
+        <input id="json2img-input" type="file" name="jsonfile" accept="application/json,.json,.txt" required>
+        <button class="button" type="submit">Restore & Download Image</button>
+      </form>
+      <div class="result" id="json2img-result"></div>
+    </div>
+  </div>
+  <script>
+    // Image to JSON
+    document.getElementById('img2json-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const fileInput = form.querySelector('input[type="file"]');
+      const resultDiv = document.getElementById('img2json-result');
+      resultDiv.textContent = 'Processing...';
+      const formData = new FormData();
+      formData.append('image', fileInput.files[0]);
+      try {
+        const res = await fetch('/convert-image-to-json', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) throw new Error('Conversion failed');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'image.json';
+        a.textContent = 'Download JSON';
+        resultDiv.innerHTML = '';
+        resultDiv.appendChild(a);
+      } catch (err) {
+        resultDiv.textContent = 'Error: ' + err.message;
+      }
+    };
+
+    // JSON to Image
+    document.getElementById('json2img-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const fileInput = form.querySelector('input[type="file"]');
+      const resultDiv = document.getElementById('json2img-result');
+      resultDiv.textContent = 'Processing...';
+      const formData = new FormData();
+      formData.append('jsonfile', fileInput.files[0]);
+      try {
+        const res = await fetch('/convert-json-to-image', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) throw new Error('Restoration failed');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'restored_image.png';
+        a.textContent = 'Download Image';
+        resultDiv.innerHTML = '';
+        resultDiv.appendChild(a);
+      } catch (err) {
+        resultDiv.textContent = 'Error: ' + err.message;
+      }
+    };
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
