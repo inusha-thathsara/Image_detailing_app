@@ -17,17 +17,119 @@
 <body>
     <a href="index.html">
         <button class="back-button">Back</button></a>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <div style="margin: 2rem;">
-        <img id="img" src="add.png" height="500" class="viewerImg">
+        <img id="img" src="add.png" height="500" class="viewerImg" alt="Preview">
     </div>
-    <input id="input" type="file" class="viewerImg" accept="image/*">
+    <div id="image-drop-zone" class="drop-zone" style="max-width:620px; margin:0 auto .5rem;">
+        <p class="dz-instructions"><strong>Drag & Drop</strong> an image here or <span class="dz-action">browse</span></p>
+        <p class="dz-hint">Supported: JPG, PNG, WebP, GIF, TIFF (metadata editing only for JPEG)</p>
+    </div>
+    <div id="file-status" class="file-status status-loading" style="display:none;">
+        <span id="file-status-icon">⌛</span>
+        <span id="file-status-text">No file selected</span>
+    </div>
+    <input id="input" type="file" class="viewerImg" accept="image/*" style="display: none;">
 
     <!-- Container for image details and EXIF data -->
     <div id="image-details-container">
-        <div id="image-details"></div>
-        <div id="exif-data"></div>
-        <button id="download-button" style="display: none;">Download Image Details</button>
+        <div id="image-details" class="card"></div>
+        <div style="flex:1; display:flex; flex-direction:column; gap:0.75rem;">
+            <div id="exif-data" class="card" style="flex:1;"></div>
+            <div id="exif-edit-container" class="card" style="display:none;">
+                <h3 style="margin-top:0;">Edit Metadata</h3>
+                <p style="margin:0 0 .75rem; font-size:.8rem; line-height:1.2; color:var(--color-text-soft);">Supported for JPEG images. Modify fields and click "Download Modified Image" to embed changes into a new file. Other formats will fall back to original metadata.</p>
+                <form id="metadata-form" class="flex-col gap-sm" autocomplete="off">
+                    <div class="meta-section" id="basic-meta-group">
+                        <div class="meta-section-header">
+                            <h4 class="meta-section-title">Basic Metadata</h4>
+                            <span class="badge">BASIC</span>
+                        </div>
+                        <div class="meta-section-body grid cols-2" style="gap:.75rem;">
+                            <label class="full-span">
+                                <span class="meta-label">Image Description</span>
+                                <input type="text" id="meta-ImageDescription" placeholder="Description" />
+                            </label>
+                            <label>
+                                <span class="meta-label">Artist</span>
+                                <input type="text" id="meta-Artist" placeholder="Artist / Creator" />
+                            </label>
+                            <label>
+                                <span class="meta-label">Copyright</span>
+                                <input type="text" id="meta-Copyright" placeholder="Copyright notice" />
+                            </label>
+                            <label>
+                                <span class="meta-label">Software</span>
+                                <input type="text" id="meta-Software" placeholder="Software / Editor" />
+                            </label>
+                            <label>
+                                <span class="meta-label">Date Taken (YYYY:MM:DD HH:MM:SS)</span>
+                                <input type="text" id="meta-DateTimeOriginal" placeholder="YYYY:MM:DD HH:MM:SS" />
+                            </label>
+                            <label class="full-span">
+                                <span class="meta-label">User Comment</span>
+                                <textarea id="meta-UserComment" placeholder="Add a user comment" class="meta-textarea"></textarea>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="meta-section" id="advanced-meta-wrapper">
+                        <div class="meta-section-header flex" style="justify-content:space-between; align-items:center;">
+                            <div style="display:flex; align-items:center; gap:.5rem;">
+                                <h4 class="meta-section-title">Advanced / Technical</h4>
+                                <span class="badge" style="background:var(--color-accent-gradient);">ADV</span>
+                            </div>
+                            <button type="button" id="toggle-advanced-meta" class="btn-ghost" style="padding:.35rem .65rem; font-size:.7rem;">Hide</button>
+                        </div>
+                        <div class="meta-section-body" id="advanced-meta-group">
+                            <div class="grid cols-2" style="gap:.65rem; margin-bottom:.75rem;">
+                                <label>
+                                    <span class="meta-label small">Aperture (f/)</span>
+                                    <input type="text" id="meta-FNumber" placeholder="e.g. 2.8" />
+                                </label>
+                                <label>
+                                    <span class="meta-label small">Shutter (Exposure)</span>
+                                    <input type="text" id="meta-ExposureTime" placeholder="1/125 or 0.008" />
+                                </label>
+                                <label>
+                                    <span class="meta-label small">ISO</span>
+                                    <input type="number" id="meta-ISO" placeholder="100" />
+                                </label>
+                                <label>
+                                    <span class="meta-label small">Focal Length (mm)</span>
+                                    <input type="text" id="meta-FocalLength" placeholder="50" />
+                                </label>
+                            </div>
+                            <div class="grid cols-2" style="gap:.65rem; margin-bottom:.75rem;">
+                                <label>
+                                    <span class="meta-label small">Camera Make</span>
+                                    <input type="text" id="meta-Make" placeholder="Canon" />
+                                </label>
+                                <label>
+                                    <span class="meta-label small">Camera Model</span>
+                                    <input type="text" id="meta-Model" placeholder="R5" />
+                                </label>
+                            </div>
+                            <div class="grid cols-2" style="gap:.65rem;">
+                                <label>
+                                    <span class="meta-label small">GPS Latitude (dec)</span>
+                                    <input type="text" id="meta-GPSLatitude" placeholder="e.g. 37.7749" />
+                                </label>
+                                <label>
+                                    <span class="meta-label small">GPS Longitude (dec)</span>
+                                    <input type="text" id="meta-GPSLongitude" placeholder="e.g. -122.4194" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="flex gap-sm" style="margin-top:.5rem; flex-wrap:wrap;">
+                    <button id="download-modified-button" class="button" style="display:none;">Download Modified Image</button>
+                    <button id="reset-metadata-button" type="button" class="btn-ghost" style="display:none;">Reset Fields</button>
+                </div>
+            </div>
+            <button id="download-button" style="display: none; align-self:flex-start;">Download Image Details</button>
+        </div>
     </div>
 
     <!-- Theme switcher button -->
@@ -41,29 +143,112 @@
         <label for="dark-theme">Dark</label>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/piexifjs"></script>
     <script>
         let img = document.getElementById("img");
         let input = document.getElementById("input");
+        const imageDropZone = document.getElementById('image-drop-zone');
+        const fileStatus = document.getElementById('file-status');
+        const fileStatusText = document.getElementById('file-status-text');
+        const fileStatusIcon = document.getElementById('file-status-icon');
+
+        function setFileStatus(state, msg) {
+            if (!fileStatus) return;
+            fileStatus.style.display = 'inline-flex';
+            fileStatus.classList.remove('status-loading','status-ok','status-error');
+            fileStatus.classList.add(state);
+            fileStatusText.textContent = msg;
+            switch(state) {
+                case 'status-ok': fileStatusIcon.textContent = '✔'; break;
+                case 'status-error': fileStatusIcon.textContent = '⚠'; break;
+                default: fileStatusIcon.textContent = '⌛';
+            }
+        }
+        setFileStatus('status-loading', 'No file selected');
         // Get the download button
         const downloadButton = document.getElementById("download-button");
+        const modifiedDownloadButton = document.getElementById("download-modified-button");
+        const resetMetadataButton = document.getElementById("reset-metadata-button");
+        const exifEditContainer = document.getElementById("exif-edit-container");
+        const metadataForm = document.getElementById("metadata-form");
+
+        let currentFile = null;
+        let originalDataURL = null;
+        let currentExifObj = null; // piexif workable object (only for JPEG)
+        let originalExifSnapshot = null;
 
         input.onchange = (e) => {
             if (input.files[0]) {
                 const file = input.files[0];
-                img.src = URL.createObjectURL(file);
+                setFileStatus('status-loading','Loading "' + file.name + '" ...');
+                currentFile = file;
+                const objectUrl = URL.createObjectURL(file);
+                img.src = objectUrl;
                 displayImageDetails(file);
                 extractExifData(file);
                 downloadButton.style.display = "block"; // Show the download button
+
+                // Reset editor state
+                exifEditContainer.style.display = 'none';
+                modifiedDownloadButton.style.display = 'none';
+                resetMetadataButton.style.display = 'none';
+
+                if (file.type === 'image/jpeg') {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        originalDataURL = evt.target.result;
+                        try {
+                            currentExifObj = piexif.load(originalDataURL);
+                            originalExifSnapshot = JSON.parse(JSON.stringify(currentExifObj));
+                            populateMetadataEditor(currentExifObj);
+                            exifEditContainer.style.display = 'block';
+                            modifiedDownloadButton.style.display = 'inline-flex';
+                            resetMetadataButton.style.display = 'inline-flex';
+                        } catch (err) {
+                            console.warn('Failed to parse EXIF for editing:', err);
+                            setFileStatus('status-error', 'Loaded (EXIF parse failed)');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    currentExifObj = null;
+                    originalDataURL = null;
+                }
+                // When image element loads, mark success
+                img.onload = () => {
+                    setFileStatus('status-ok','Loaded: ' + file.name + ' (' + file.type + ')');
+                };
+                img.onerror = () => {
+                    setFileStatus('status-error','Failed to load preview');
+                };
             }
         }
+
+        // Drag & Drop handlers for image
+        ;(['dragenter','dragover','dragleave','drop']).forEach(ev => {
+            imageDropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }, false);
+        });
+        ;(['dragenter','dragover']).forEach(ev => {
+            imageDropZone.addEventListener(ev, () => imageDropZone.classList.add('dragover'), false);
+        });
+        ;(['dragleave','drop']).forEach(ev => {
+            imageDropZone.addEventListener(ev, () => imageDropZone.classList.remove('dragover'), false);
+        });
+        imageDropZone.addEventListener('drop', e => {
+            const files = e.dataTransfer.files;
+            if (!files || !files.length) return;
+            const file = files[0];
+            if (!file.type.startsWith('image/')) { showToast('Not an image file.', 'warn'); setFileStatus('status-error','Unsupported file'); return; }
+            input.files = files; // Assign to underlying input
+            input.dispatchEvent(new Event('change'));
+        });
+        imageDropZone.addEventListener('click', () => input.click());
 
         function displayImageDetails(file) {
             const details = `
                 <h3>Image Details:</h3>
                 <p><strong>Name:</strong> ${file.name}</p>
-                <br>
                 <p><strong>Size:</strong> ${file.size} bytes</p>
-                <br>
                 <p><strong>Type:</strong> ${file.type}</p>
             `;
             document.getElementById("image-details").innerHTML = details; // Update image details container
@@ -74,11 +259,198 @@
                 const allMetaData = EXIF.getAllTags(this);
                 let exifDetails = '<h3>EXIF Data:</h3>';
                 for (let key in allMetaData) {
-                    exifDetails += `<p><strong>${key}:</strong> ${allMetaData[key]}</p><br>`;
+                    exifDetails += `<p><strong>${key}:</strong> ${allMetaData[key]}</p>`;
                 }
                 document.getElementById("exif-data").innerHTML = exifDetails; // Update EXIF data container
             });
         }
+
+        // Populate metadata editor fields (JPEG only)
+        function populateMetadataEditor(exifObj) {
+            if (!exifObj) return;
+            const zeroth = exifObj['0th'] || {};
+            const exifIFD = exifObj['Exif'] || {};
+            const gpsIFD = exifObj['GPS'] || {};
+            const getStr = (tagObj, tagNum) => {
+                const v = tagObj[tagNum];
+                if (v === undefined) return '';
+                if (Array.isArray(v)) {
+                    try { return decodeURIComponent(escape(String.fromCharCode.apply(null, v))); } catch(_) { return v.toString(); }
+                }
+                return v.toString();
+            };
+            document.getElementById('meta-ImageDescription').value = getStr(zeroth, piexif.ImageIFD.ImageDescription) || '';
+            document.getElementById('meta-Artist').value = getStr(zeroth, piexif.ImageIFD.Artist) || '';
+            document.getElementById('meta-Copyright').value = getStr(zeroth, piexif.ImageIFD.Copyright) || '';
+            document.getElementById('meta-Software').value = getStr(zeroth, piexif.ImageIFD.Software) || '';
+            document.getElementById('meta-Make').value = getStr(zeroth, piexif.ImageIFD.Make) || '';
+            document.getElementById('meta-Model').value = getStr(zeroth, piexif.ImageIFD.Model) || '';
+            // DateTimeOriginal formatted
+            document.getElementById('meta-DateTimeOriginal').value = getStr(exifIFD, piexif.ExifIFD.DateTimeOriginal) || '';
+
+            // Exposure values
+            const rationalToStr = (val) => {
+                if (!val) return ''; if (Array.isArray(val) && val.length===2 && typeof val[0]==='number') { return (val[0]/val[1]).toString(); } return val.toString(); };
+            document.getElementById('meta-FNumber').value = rationalToStr(exifIFD[piexif.ExifIFD.FNumber]);
+            document.getElementById('meta-ExposureTime').value = rationalToStr(exifIFD[piexif.ExifIFD.ExposureTime]);
+            document.getElementById('meta-ISO').value = exifIFD[piexif.ExifIFD.ISOSpeedRatings] || '';
+            document.getElementById('meta-FocalLength').value = rationalToStr(exifIFD[piexif.ExifIFD.FocalLength]);
+
+            // GPS decimal conversion
+            function dmsToDec(dms, ref) {
+                try {
+                    if (!Array.isArray(dms) || dms.length<3) return '';
+                    const frac = (r)=> r[0]/r[1];
+                    const deg = frac(dms[0]);
+                    const min = frac(dms[1]);
+                    const sec = frac(dms[2]);
+                    let dec = deg + (min/60) + (sec/3600);
+                    if (ref==='S' || ref==='W') dec = -dec;
+                    return dec.toFixed(6);
+                } catch { return ''; }
+            }
+            const lat = gpsIFD[piexif.GPSIFD.GPSLatitude];
+            const latRef = gpsIFD[piexif.GPSIFD.GPSLatitudeRef];
+            const lon = gpsIFD[piexif.GPSIFD.GPSLongitude];
+            const lonRef = gpsIFD[piexif.GPSIFD.GPSLongitudeRef];
+            document.getElementById('meta-GPSLatitude').value = dmsToDec(lat, latRef);
+            document.getElementById('meta-GPSLongitude').value = dmsToDec(lon, lonRef);
+
+            // UserComment (special encoded)
+            let userCommentRaw = exifIFD[piexif.ExifIFD.UserComment];
+            if (userCommentRaw) {
+                if (typeof userCommentRaw === 'string') {
+                    document.getElementById('meta-UserComment').value = userCommentRaw.replace(/^ASCII\0{3}/,'');
+                } else if (Array.isArray(userCommentRaw)) {
+                    try {
+                        const t = userCommentRaw.map(c=> String.fromCharCode(c)).join('');
+                        document.getElementById('meta-UserComment').value = t.replace(/^ASCII\0{3}/,'');
+                    } catch(_) { document.getElementById('meta-UserComment').value = ''; }
+                }
+            } else {
+                document.getElementById('meta-UserComment').value = '';
+            }
+        }
+
+        // Reset metadata form to original snapshot
+        resetMetadataButton.addEventListener('click', () => {
+            if (!originalExifSnapshot) return;
+            currentExifObj = JSON.parse(JSON.stringify(originalExifSnapshot));
+            populateMetadataEditor(currentExifObj);
+        });
+
+        // Download modified JPEG with updated metadata
+        modifiedDownloadButton.addEventListener('click', () => {
+            if (!currentExifObj || !originalDataURL) {
+                showToast('Metadata editing only supported for JPEG images.', 'warn');
+                return;
+            }
+            const zeroth = currentExifObj['0th'] || (currentExifObj['0th'] = {});
+            const exifIFD = currentExifObj['Exif'] || (currentExifObj['Exif'] = {});
+            const gpsIFD = currentExifObj['GPS'] || (currentExifObj['GPS'] = {});
+            const imgDesc = document.getElementById('meta-ImageDescription').value.trim();
+            const artist = document.getElementById('meta-Artist').value.trim();
+            const copyright = document.getElementById('meta-Copyright').value.trim();
+            const software = document.getElementById('meta-Software').value.trim();
+            const dateTimeOriginal = document.getElementById('meta-DateTimeOriginal').value.trim();
+            const fNumber = document.getElementById('meta-FNumber').value.trim();
+            const exposureTime = document.getElementById('meta-ExposureTime').value.trim();
+            const iso = document.getElementById('meta-ISO').value.trim();
+            const focalLen = document.getElementById('meta-FocalLength').value.trim();
+            const cameraMake = document.getElementById('meta-Make').value.trim();
+            const cameraModel = document.getElementById('meta-Model').value.trim();
+            const gpsLat = document.getElementById('meta-GPSLatitude').value.trim();
+            const gpsLon = document.getElementById('meta-GPSLongitude').value.trim();
+            const userComment = document.getElementById('meta-UserComment').value.trim();
+
+            const strEncode = (s) => s;
+            if (imgDesc) zeroth[piexif.ImageIFD.ImageDescription] = strEncode(imgDesc); else delete zeroth[piexif.ImageIFD.ImageDescription];
+            if (artist) zeroth[piexif.ImageIFD.Artist] = strEncode(artist); else delete zeroth[piexif.ImageIFD.Artist];
+            if (copyright) zeroth[piexif.ImageIFD.Copyright] = strEncode(copyright); else delete zeroth[piexif.ImageIFD.Copyright];
+            if (software) zeroth[piexif.ImageIFD.Software] = strEncode(software); else delete zeroth[piexif.ImageIFD.Software];
+            if (cameraMake) zeroth[piexif.ImageIFD.Make] = strEncode(cameraMake); else delete zeroth[piexif.ImageIFD.Make];
+            if (cameraModel) zeroth[piexif.ImageIFD.Model] = strEncode(cameraModel); else delete zeroth[piexif.ImageIFD.Model];
+            if (dateTimeOriginal) exifIFD[piexif.ExifIFD.DateTimeOriginal] = dateTimeOriginal; else delete exifIFD[piexif.ExifIFD.DateTimeOriginal];
+
+            // Rational helpers
+            function toRational(val) {
+                if (!val) return null;
+                if (/^\d+\/\d+$/.test(val)) { const parts = val.split('/'); return [parseInt(parts[0],10), parseInt(parts[1],10)]; }
+                const num = parseFloat(val);
+                if (isNaN(num)) return null;
+                const denom = 10000; return [Math.round(num*denom), denom];
+            }
+            const fNumRat = toRational(fNumber);
+            if (fNumRat) exifIFD[piexif.ExifIFD.FNumber] = fNumRat; else delete exifIFD[piexif.ExifIFD.FNumber];
+            // Exposure time: keep fractional if provided
+            let expRat = null;
+            if (exposureTime) {
+                if (/^\d+\/\d+$/.test(exposureTime)) {
+                    const parts = exposureTime.split('/'); expRat = [parseInt(parts[0],10), parseInt(parts[1],10)];
+                } else {
+                    const num = parseFloat(exposureTime); if (!isNaN(num) && num>0) { const denom = 1000000; expRat=[Math.round(num*denom), denom]; }
+                }
+            }
+            if (expRat) exifIFD[piexif.ExifIFD.ExposureTime] = expRat; else delete exifIFD[piexif.ExifIFD.ExposureTime];
+            if (iso) exifIFD[piexif.ExifIFD.ISOSpeedRatings] = parseInt(iso,10) || 0; else delete exifIFD[piexif.ExifIFD.ISOSpeedRatings];
+            const focalRat = toRational(focalLen);
+            if (focalRat) exifIFD[piexif.ExifIFD.FocalLength] = focalRat; else delete exifIFD[piexif.ExifIFD.FocalLength];
+
+            // GPS (decimal -> rational DMS)
+            function decToDmsRational(dec) {
+                const val = parseFloat(dec);
+                if (isNaN(val)) return null;
+                const abs = Math.abs(val);
+                const deg = Math.floor(abs);
+                const minFloat = (abs - deg) * 60;
+                const min = Math.floor(minFloat);
+                const sec = (minFloat - min) * 60;
+                const toRat = (n) => { const denom = 10000; return [Math.round(n*denom), denom]; };
+                return [ [deg,1], [min,1], toRat(sec) ];
+            }
+            if (gpsLat) {
+                const rat = decToDmsRational(gpsLat);
+                if (rat) {
+                    gpsIFD[piexif.GPSIFD.GPSLatitude] = rat;
+                    gpsIFD[piexif.GPSIFD.GPSLatitudeRef] = parseFloat(gpsLat) < 0 ? 'S' : 'N';
+                }
+            } else { delete gpsIFD[piexif.GPSIFD.GPSLatitude]; delete gpsIFD[piexif.GPSIFD.GPSLatitudeRef]; }
+            if (gpsLon) {
+                const rat = decToDmsRational(gpsLon);
+                if (rat) {
+                    gpsIFD[piexif.GPSIFD.GPSLongitude] = rat;
+                    gpsIFD[piexif.GPSIFD.GPSLongitudeRef] = parseFloat(gpsLon) < 0 ? 'W' : 'E';
+                }
+            } else { delete gpsIFD[piexif.GPSIFD.GPSLongitude]; delete gpsIFD[piexif.GPSIFD.GPSLongitudeRef]; }
+            if (userComment) {
+                const prefix = 'ASCII\\0\\0\\0';
+                exifIFD[piexif.ExifIFD.UserComment] = prefix + userComment;
+            } else {
+                delete exifIFD[piexif.ExifIFD.UserComment];
+            }
+
+            let exifBytes;
+            try {
+                exifBytes = piexif.dump(currentExifObj);
+            } catch (err) {
+                showToast('Failed to build EXIF: ' + err.message, 'error');
+                return;
+            }
+            let newDataURL;
+            try {
+                newDataURL = piexif.insert(exifBytes, originalDataURL);
+            } catch (err) {
+                showToast('Failed to insert EXIF: ' + err.message, 'error');
+                return;
+            }
+            const link = document.createElement('a');
+            const baseName = (currentFile?.name || 'image').replace(/\.[^.]+$/, '');
+            link.download = baseName + '_with_metadata.jpg';
+            link.href = newDataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 
         // Add an event listener to the download button to download the image details
         downloadButton.addEventListener("click", () => {
@@ -108,7 +480,7 @@
                     blob = new Blob([JSON.stringify(jsonData)], { type: "application/json" });
                     break;
                 default:
-                    alert("Invalid format selected.");
+                    showToast('Invalid format selected.', 'warn');
                     return;
             }
 
@@ -119,6 +491,54 @@
             link.click();
         });
     </script>
+    <script>
+        // Toast helper
+        function showToast(message, type = 'info', opts = {}) {
+            const container = document.getElementById('toast-container');
+            if (!container) return alert(message);
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + (type || '');
+            toast.setAttribute('role','status');
+            toast.innerHTML = `<button class="close-btn" aria-label="Close">×</button><div style="flex:1;">${message}</div>`;
+            const closeBtn = toast.querySelector('.close-btn');
+            let removeTimer;
+            const remove = (delay=0)=>{
+                if (toast._removing) return; toast._removing = true;
+                toast.style.animation = 'toast-out .35s forwards';
+                setTimeout(()=> toast.remove(), 340 + delay);
+            };
+            closeBtn.addEventListener('click', ()=> remove());
+            container.appendChild(toast);
+            const ttl = opts.ttl || (type==='error'?6000:4000);
+            removeTimer = setTimeout(()=> remove(), ttl);
+            toast.addEventListener('mouseenter', ()=> clearTimeout(removeTimer));
+            toast.addEventListener('mouseleave', ()=> removeTimer = setTimeout(()=> remove(), 1500));
+        }
+    </script>
+    <script>
+        // Advanced metadata section show/hide
+        (function(){
+            const btn = document.getElementById('toggle-advanced-meta');
+            const grp = document.getElementById('advanced-meta-group');
+            if (!btn || !grp) return;
+            btn.addEventListener('click', () => {
+                const hidden = grp.style.display === 'none';
+                grp.style.display = hidden ? 'block' : 'none';
+                btn.textContent = hidden ? 'Hide' : 'Show';
+            });
+        })();
+    </script>
+    <style>
+        .meta-section { border:1px solid var(--color-border); padding:.75rem .9rem 1rem; border-radius:8px; background:var(--color-surface); box-shadow:0 1px 2px rgba(0,0,0,.08); }
+        body.dark-theme .meta-section { background:#2a3036; }
+        .meta-section + .meta-section { margin-top:1rem; }
+        .meta-section-title { margin:0; font-size:.9rem; letter-spacing:.75px; text-transform:uppercase; opacity:.85; }
+        .meta-label { font-size:.65rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; display:block; margin-bottom:.15rem; opacity:.75; }
+        .meta-label.small { font-size:.55rem; }
+        .meta-textarea { min-height:70px; resize:vertical; background:var(--color-bg-alt); border:1px solid var(--color-border); color:inherit; border-radius:5px; padding:.5rem; width:100%; }
+        .full-span { grid-column: 1 / -1; }
+        #advanced-meta-group { transition: height .35s ease, opacity .35s ease; }
+    </style>
     <script src="script.js"></script>
 
 </body>

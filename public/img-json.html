@@ -43,24 +43,57 @@
     </div>
     <div class="section">
       <h2>Convert Image to JSON</h2>
+      <div id="img2json-drop" class="drop-zone" style="margin-bottom: .75rem;">
+        <p class="dz-instructions"><strong>Drag & Drop</strong> image here or <span class="dz-action">browse</span></p>
+        <p class="dz-hint">Image will be encoded to base64 JSON (with MIME & size).</p>
+      </div>
+      <div id="img2json-status" class="file-status status-loading" style="display:none;">
+        <span class="fs-icon">⌛</span>
+        <span class="fs-text">No image selected</span>
+      </div>
       <form id="img2json-form">
-        <label for="img2json-input">Select image file:</label>
-        <input id="img2json-input" type="file" name="image" accept="image/*" required>
+        <label for="img2json-input" style="display: none;">Select image file:</label>
+        <input id="img2json-input" type="file" name="image" accept="image/*" required style="display: none;">
         <button class="button" type="submit">Convert & Download JSON</button>
       </form>
       <div class="result" id="img2json-result"></div>
     </div>
     <div class="section">
       <h2>Restore Image from JSON</h2>
+      <div id="json2img-drop" class="drop-zone" style="margin-bottom: .75rem;">
+        <p class="dz-instructions"><strong>Drag & Drop</strong> JSON here or <span class="dz-action">browse</span></p>
+        <p class="dz-hint">JSON must contain previously exported base64 data.</p>
+      </div>
+      <div id="json2img-status" class="file-status status-loading" style="display:none;">
+        <span class="fs-icon">⌛</span>
+        <span class="fs-text">No JSON selected</span>
+      </div>
       <form id="json2img-form">
-        <label for="json2img-input">Select JSON file:</label>
-        <input id="json2img-input" type="file" name="jsonfile" accept="application/json,.json,.txt" required>
+        <label for="json2img-input" style="display: none;">Select JSON file:</label>
+        <input id="json2img-input" type="file" name="jsonfile" accept="application/json,.json,.txt" required style="display: none;">
         <button class="button" type="submit">Restore & Download Image</button>
       </form>
       <div class="result" id="json2img-result"></div>
     </div>
   </div>
   <script>
+    // Generic file status helper
+    function setStatus(wrapperId, state, message) {
+      const el = document.getElementById(wrapperId);
+      if (!el) return;
+      el.style.display = 'inline-flex';
+      el.classList.remove('status-loading','status-ok','status-error');
+      el.classList.add(state);
+      const icon = el.querySelector('.fs-icon');
+      const txt = el.querySelector('.fs-text');
+      if (txt) txt.textContent = message;
+      if (icon) {
+        icon.textContent = state === 'status-ok' ? '✔' : state === 'status-error' ? '⚠' : '⌛';
+      }
+    }
+    setStatus('img2json-status','status-loading','No image selected');
+    setStatus('json2img-status','status-loading','No JSON selected');
+
     // Image to JSON
     document.getElementById('img2json-form').onsubmit = async function(e) {
       e.preventDefault();
@@ -68,6 +101,9 @@
       const fileInput = form.querySelector('input[type="file"]');
       const resultDiv = document.getElementById('img2json-result');
       resultDiv.textContent = 'Processing...';
+      if (!fileInput.files.length) { setStatus('img2json-status','status-error','No image selected'); return; }
+      const file = fileInput.files[0];
+      setStatus('img2json-status','status-loading','Converting ' + file.name + ' ...');
       const formData = new FormData();
       formData.append('image', fileInput.files[0]);
       try {
@@ -84,8 +120,10 @@
         a.textContent = 'Download JSON';
         resultDiv.innerHTML = '';
         resultDiv.appendChild(a);
+        setStatus('img2json-status','status-ok','Converted ' + file.name);
       } catch (err) {
         resultDiv.textContent = 'Error: ' + err.message;
+        setStatus('img2json-status','status-error','Failed: ' + err.message);
       }
     };
 
@@ -96,6 +134,9 @@
       const fileInput = form.querySelector('input[type="file"]');
       const resultDiv = document.getElementById('json2img-result');
       resultDiv.textContent = 'Processing...';
+      if (!fileInput.files.length) { setStatus('json2img-status','status-error','No JSON selected'); return; }
+      const file = fileInput.files[0];
+      setStatus('json2img-status','status-loading','Restoring from ' + file.name + ' ...');
       const formData = new FormData();
       formData.append('jsonfile', fileInput.files[0]);
       try {
@@ -112,10 +153,63 @@
         a.textContent = 'Download Image';
         resultDiv.innerHTML = '';
         resultDiv.appendChild(a);
+        setStatus('json2img-status','status-ok','Restored image from ' + file.name);
       } catch (err) {
         resultDiv.textContent = 'Error: ' + err.message;
+        setStatus('json2img-status','status-error','Failed: ' + err.message);
       }
     };
+    // Drag & Drop helpers (reusable)
+    function wireDropZone(zoneEl, inputEl, acceptFn, errorMessage) {
+      ;['dragenter','dragover','dragleave','drop'].forEach(ev => {
+        zoneEl.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }, false);
+      });
+      ;['dragenter','dragover'].forEach(ev => zoneEl.addEventListener(ev, ()=> zoneEl.classList.add('dragover'), false));
+      ;['dragleave','drop'].forEach(ev => zoneEl.addEventListener(ev, ()=> zoneEl.classList.remove('dragover'), false));
+      zoneEl.addEventListener('click', ()=> inputEl.click());
+      zoneEl.addEventListener('drop', e => {
+        const files = e.dataTransfer.files;
+        if (!files || !files.length) return;
+        const f = files[0];
+        if (!acceptFn(f)) { showToast(errorMessage || 'Invalid file type', 'warn'); return; }
+        inputEl.files = files;
+        inputEl.dispatchEvent(new Event('change'));
+      });
+    }
+    const dzImg = document.getElementById('img2json-drop');
+    const dzImgInput = document.getElementById('img2json-input');
+    const dzJson = document.getElementById('json2img-drop');
+    const dzJsonInput = document.getElementById('json2img-input');
+    wireDropZone(dzImg, dzImgInput, f => {
+      const ok = f.type.startsWith('image/');
+      if (ok) setStatus('img2json-status','status-ok','Ready: ' + f.name);
+      else setStatus('img2json-status','status-error','Invalid file');
+      return ok;
+    }, 'Not an image file');
+    wireDropZone(dzJson, dzJsonInput, f => {
+      const ok = (/json|text/).test(f.type) || /\.json$/i.test(f.name);
+      if (ok) setStatus('json2img-status','status-ok','Ready: ' + f.name);
+      else setStatus('json2img-status','status-error','Invalid file');
+      return ok;
+    }, 'Not a JSON file');
+
+    // Also react when user uses hidden browse inputs (change events)
+    dzImgInput.addEventListener('change', () => {
+      if (dzImgInput.files && dzImgInput.files.length) {
+        const f = dzImgInput.files[0];
+        if (f.type.startsWith('image/')) setStatus('img2json-status','status-ok','Ready: ' + f.name);
+        else setStatus('img2json-status','status-error','Invalid file');
+      }
+    });
+    dzJsonInput.addEventListener('change', () => {
+      if (dzJsonInput.files && dzJsonInput.files.length) {
+        const f = dzJsonInput.files[0];
+        if ((/json|text/).test(f.type) || /\.json$/i.test(f.name)) setStatus('json2img-status','status-ok','Ready: ' + f.name);
+        else setStatus('json2img-status','status-error','Invalid file');
+      }
+    });
+    // Provide minimal toast if not already present (fallback)
+    function showToast(msg, type) { console.log(type?`[${type}]`:'', msg); }
   </script>
   <script src="script.js"></script>
 </body>
