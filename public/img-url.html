@@ -17,6 +17,7 @@
 </head>
 
 <body>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
     <!-- Theme switcher button -->
     <button id="theme-switcher">Switch Theme</button>
 
@@ -36,6 +37,10 @@
             <button class="paste-button" id="paste-button">Paste</button>
         </div>
         <button class="button" id="load-button">Load Image</button>
+        <div class="flex gap-sm mt-sm" style="flex-wrap:wrap;">
+            <button class="button" id="download-remote-image" style="display:none;">Download Image</button>
+            <button class="button" id="download-remote-metadata" style="display:none;">Download Metadata</button>
+        </div>
         <br>
         <br>
         <img class="image" id="image" src="">
@@ -46,6 +51,13 @@
         const loadButton = document.getElementById('load-button');
         const image = document.getElementById('image');
         const imageDetails = document.getElementById('image-details');
+        const dlImageBtn = document.getElementById('download-remote-image');
+        const dlMetaBtn = document.getElementById('download-remote-metadata');
+
+        let lastRequestedUrl = null; // original user provided URL
+        let lastImageLoaded = false;
+        let lastDimensions = null;
+        let lastExif = null; // object of exif tags if extracted
         
         function setDetailsFrom(img, url) {
             const w = img.naturalWidth || img.width;
@@ -62,6 +74,10 @@
                 <p><strong>Resolution:</strong> ${w} x ${h} pixels</p>
             `;
             imageDetails.innerHTML = details;
+            lastDimensions = { width: w, height: h, aspectRatio: (w/h), orientation: (w>h?'Landscape':'Portrait'), url, pixelCount: w*h, resolution: `${w} x ${h}` };
+            dlImageBtn.style.display = 'inline-flex';
+            dlMetaBtn.style.display = 'inline-flex';
+            lastImageLoaded = true;
         }
 
         async function loadImageWithFallback(rawUrl) {
@@ -81,6 +97,7 @@
             try {
                 const result = await tryLoad(rawUrl);
                 setDetailsFrom(image, rawUrl);
+                extractExifFromRemote(rawUrl); // attempt EXIF
                 return result;
             } catch (_) {
                 // ignore; fallback below
@@ -91,9 +108,11 @@
                 const proxied = `/proxy?url=${encodeURIComponent(rawUrl)}`;
                 const result = await tryLoad(proxied);
                 setDetailsFrom(image, rawUrl);
+                extractExifFromRemote(rawUrl, true); // try via proxy fetch
                 return result;
             } catch (err) {
                 imageDetails.innerHTML = '<p style="color:red">Failed to load image from the provided URL. Please verify the URL or try downloading and using Upload Image instead.</p>';
+                showToast('Failed to load remote image.', 'error');
                 throw err;
             }
         }
@@ -111,12 +130,150 @@
         loadButton.addEventListener('click', async () => {
             const url = urlInput.value.trim();
             if (!url) return;
+            lastRequestedUrl = url;
             try {
                 await loadImageWithFallback(url);
+                showToast('Image loaded successfully', 'success');
             } catch (e) {
                 // already handled
             }
         });
+
+        // Download remote image (original bytes)
+        dlImageBtn.addEventListener('click', async () => {
+            if (!lastRequestedUrl || !lastImageLoaded) return;
+            let blob;
+            // Attempt direct fetch first
+            try {
+                const r = await fetch(lastRequestedUrl, { mode: 'cors' });
+                if (!r.ok) throw new Error('HTTP '+r.status);
+                blob = await r.blob();
+            } catch (_) {
+                try {
+                    const r2 = await fetch(`/proxy?url=${encodeURIComponent(lastRequestedUrl)}`);
+                    if (!r2.ok) throw new Error('Proxy HTTP '+r2.status);
+                    blob = await r2.blob();
+                } catch (err2) {
+                    showToast('Failed to download image.', 'error');
+                    return;
+                }
+            }
+            const guessedName = deriveFileName(lastRequestedUrl, blob.type);
+            triggerBlobDownload(blob, guessedName);
+            showToast('Image download started', 'info');
+        });
+
+        // Download metadata (txt / csv / json similar to upload page)
+        dlMetaBtn.addEventListener('click', () => {
+            if (!lastDimensions) return;
+            const format = prompt('Select a format (txt, csv, json):');
+            if (!format) return;
+            const meta = buildMetadataObject();
+            let blob;
+            if (format === 'json') {
+                blob = new Blob([JSON.stringify(meta, null, 2)], { type: 'application/json' });
+            } else if (format === 'csv') {
+                const rows = [];
+                for (const k in meta.basic) rows.push(`${k},"${meta.basic[k]}"`);
+                if (meta.exif) {
+                    for (const k in meta.exif) rows.push(`EXIF_${k},"${meta.exif[k]}"`);
+                }
+                blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+            } else if (format === 'txt') {
+                let txt = 'Image Metadata\n';
+                for (const k in meta.basic) txt += `${k}: ${meta.basic[k]}\n`;
+                if (meta.exif) {
+                    txt += '\nEXIF Data\n';
+                    for (const k in meta.exif) txt += `${k}: ${meta.exif[k]}\n`;
+                }
+                blob = new Blob([txt], { type: 'text/plain' });
+            } else {
+                showToast('Invalid format selected.', 'warn');
+                return;
+            }
+            const name = deriveFileName(lastRequestedUrl, '') + '_metadata.' + format;
+            triggerBlobDownload(blob, name);
+            showToast('Metadata file generated', 'success');
+        });
+
+        function buildMetadataObject() {
+            const basic = { ...lastDimensions };
+            const meta = { basic };
+            if (lastExif && Object.keys(lastExif).length) meta.exif = lastExif;
+            return meta;
+        }
+
+        function deriveFileName(url, mimeType) {
+            try {
+                const u = new URL(url, window.location.origin);
+                const base = u.pathname.split('/').filter(Boolean).pop() || 'image';
+                if (/\.[a-zA-Z0-9]{2,5}$/.test(base)) return base;
+                const ext = mimeType && mimeType.startsWith('image/') ? mimeType.split('/')[1] : 'png';
+                return base + '.' + ext;
+            } catch { return 'image'; }
+        }
+
+        function triggerBlobDownload(blob, filename) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function extractExifFromRemote(rawUrl, useProxyFallback) {
+            lastExif = null;
+            const tryFetch = async (url) => {
+                const r = await fetch(url);
+                if (!r.ok) throw new Error('HTTP '+r.status);
+                return await r.arrayBuffer();
+            };
+            let buf;
+            try {
+                buf = await tryFetch(rawUrl);
+            } catch (e) {
+                if (!useProxyFallback) {
+                    try { buf = await tryFetch(`/proxy?url=${encodeURIComponent(rawUrl)}`); } catch(_) { return; }
+                } else return;
+            }
+            try {
+                const dataView = new DataView(buf);
+                const exif = EXIF.readFromBinaryFile(dataView);
+                if (exif && Object.keys(exif).length) {
+                    lastExif = exif;
+                    appendExifToDetails(exif);
+                }
+            } catch(_) { /* ignore */ }
+        }
+
+        function appendExifToDetails(exif) {
+            let html = imageDetails.innerHTML;
+            html += '<h3>EXIF Data:</h3>';
+            for (const k in exif) {
+                html += `<p><strong>${k}:</strong> ${exif[k]}</p>`;
+            }
+            imageDetails.innerHTML = html;
+        }
+
+        // Toast helper (shared with upload page pattern)
+        function showToast(message, type = 'info', opts = {}) {
+            const container = document.getElementById('toast-container');
+            if (!container) return alert(message);
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + (type || '');
+            toast.setAttribute('role','status');
+            toast.innerHTML = `<button class="close-btn" aria-label="Close">×</button><div style="flex:1;">${message}</div>`;
+            const closeBtn = toast.querySelector('.close-btn');
+            let removeTimer;
+            const remove = (delay=0)=>{ if (toast._removing) return; toast._removing=true; toast.style.animation='toast-out .35s forwards'; setTimeout(()=>toast.remove(),340+delay); };
+            closeBtn.addEventListener('click', ()=> remove());
+            container.appendChild(toast);
+            const ttl = opts.ttl || (type==='error'?6000:4000);
+            removeTimer = setTimeout(()=> remove(), ttl);
+            toast.addEventListener('mouseenter', ()=> clearTimeout(removeTimer));
+            toast.addEventListener('mouseleave', ()=> removeTimer = setTimeout(()=> remove(), 1500));
+        }
     </script>
     <script src="script.js"></script>
 

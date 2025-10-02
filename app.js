@@ -4,9 +4,114 @@ const app = express();
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
+const multer = require('multer');
+const path = require('path');
+const { spawn } = require('child_process');
+const fs = require('fs');
 
 app.use(express.static('public'));
 app.use(bodyParser.json());
+
+// Set up multer for file uploads
+const upload = multer({ dest: 'uploads/' });
+
+
+// POST /convert-image-to-json: upload image, get JSON (uses img_to_json.py)
+app.post('/convert-image-to-json', upload.single('image'), (req, res) => {
+    if (!req.file) return res.status(400).send('No image uploaded');
+    const imagePath = path.resolve(req.file.path);
+    const jsonPath = path.resolve(req.file.path + '.json');
+    const scriptPath = path.resolve(__dirname, 'img_to_json.py');
+
+    const pythonCmd = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+    let stderr = '', stdout = '';
+    let py = spawn(pythonCmd, [scriptPath, imagePath, jsonPath], { shell: false });
+
+    const handleFinish = (code, triedAlt) => {
+        if (code !== 0 || !fs.existsSync(jsonPath)) {
+            console.error('Python exit code:', code, 'stderr:', stderr, 'stdout:', stdout);
+            if (!triedAlt && process.platform === 'win32') {
+                // Try Windows py launcher as a fallback
+                stderr = '';
+                stdout = '';
+                py = spawn('py', ['-3', scriptPath, imagePath, jsonPath], { shell: false });
+                py.stdout.on('data', (d) => stdout += d.toString());
+                py.stderr.on('data', (d) => stderr += d.toString());
+                py.on('error', (err) => {
+                    console.error('Spawn error (py -3):', err);
+                    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+                    return res.status(500).send('Python spawn failed: ' + err.message);
+                });
+                py.on('close', (code2) => handleFinish(code2, true));
+                return;
+            }
+            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+            return res.status(500).send('Python conversion failed. Details: ' + (stderr || 'no stderr') + ' | code=' + code);
+        }
+        res.download(jsonPath, 'image.json', (err) => {
+            if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+            if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
+        });
+    };
+
+    py.stdout.on('data', (d) => stdout += d.toString());
+    py.stderr.on('data', (d) => stderr += d.toString());
+    py.on('error', (err) => {
+        console.error('Spawn error (python):', err);
+        if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+        return res.status(500).send('Python spawn failed: ' + err.message);
+    });
+    py.on('close', (code) => handleFinish(code, false));
+});
+
+
+// POST /convert-json-to-image: upload JSON, get image (uses json_to_img.py)
+app.post('/convert-json-to-image', upload.single('jsonfile'), (req, res) => {
+    if (!req.file) return res.status(400).send('No JSON uploaded');
+    const jsonPath = path.resolve(req.file.path);
+    const outImagePath = path.resolve(req.file.path + '.png');
+    const scriptPath = path.resolve(__dirname, 'json_to_img.py');
+
+    const pythonCmd = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+    let stderr = '', stdout = '';
+    let py = spawn(pythonCmd, [scriptPath, jsonPath, outImagePath], { shell: false });
+
+    const handleFinish = (code, triedAlt) => {
+        if (code !== 0 || !fs.existsSync(outImagePath)) {
+            console.error('Python exit code:', code, 'stderr:', stderr, 'stdout:', stdout);
+            if (!triedAlt && process.platform === 'win32') {
+                // Try Windows py launcher as a fallback
+                stderr = '';
+                stdout = '';
+                py = spawn('py', ['-3', scriptPath, jsonPath, outImagePath], { shell: false });
+                py.stdout.on('data', (d) => stdout += d.toString());
+                py.stderr.on('data', (d) => stderr += d.toString());
+                py.on('error', (err) => {
+                    console.error('Spawn error (py -3):', err);
+                    if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
+                    return res.status(500).send('Python spawn failed: ' + err.message);
+                });
+                py.on('close', (code2) => handleFinish(code2, true));
+                return;
+            }
+            if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
+            return res.status(500).send('Python restoration failed. Details: ' + (stderr || 'no stderr') + ' | code=' + code);
+        }
+        res.download(outImagePath, 'restored_image.png', (err) => {
+            if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
+            if (fs.existsSync(outImagePath)) fs.unlinkSync(outImagePath);
+        });
+    };
+
+    py.stdout.on('data', (d) => stdout += d.toString());
+    py.stderr.on('data', (d) => stderr += d.toString());
+    py.on('error', (err) => {
+        console.error('Spawn error (python):', err);
+        if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath);
+        return res.status(500).send('Python spawn failed: ' + err.message);
+    });
+    py.on('close', (code) => handleFinish(code, false));
+});
 
 // Simple image proxy to work around CORS/hotlink restrictions for some hosts
 // Usage: GET /proxy?url=<encoded image url>
